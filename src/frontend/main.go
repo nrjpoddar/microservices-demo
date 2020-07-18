@@ -37,7 +37,7 @@ import (
 
 const (
 	port            = "8080"
-	defaultCurrency = "USD"
+	defaultCurrency = "INR"
 	cookieMaxAge    = 60 * 60 * 48
 
 	cookiePrefix    = "shop_"
@@ -52,7 +52,8 @@ var (
 		"CAD": true,
 		"JPY": true,
 		"GBP": true,
-		"TRY": true}
+		"TRY": true,
+		"INR": true}
 )
 
 type ctxKeySessionID struct{}
