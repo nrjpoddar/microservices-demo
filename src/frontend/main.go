@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"cloud.google.com/go/profiler"
-	"contrib.go.opencensus.io/exporter/jaeger"
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/gorilla/mux"
+	openzipkin "github.com/openzipkin/zipkin-go"
+	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/plugin/ocgrpc"
@@ -163,19 +165,25 @@ func initJaegerTracing(log logrus.FieldLogger) {
 		return
 	}
 
-	// Register the Jaeger exporter to be able to retrieve
+	// Register the Zipkin exporter to be able to retrieve
 	// the collected spans.
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint: fmt.Sprintf("http://%s", svcAddr),
-		Process: jaeger.Process{
-			ServiceName: "frontend",
-		},
-	})
+	localEndpointURI := "127.0.0.1:5454"
+	reporterURI := "http://" + svcAddr + "/api/v2/spans"
+	serviceName := "frontend.online-boutique"
+
+	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
+	if err != nil {
+		log.Fatalf("Failed to create Zipkin localEndpoint with URI %q error: %v", localEndpointURI, err)
+	}
+
+	reporter := zipkinHTTP.NewReporter(reporterURI)
+	ze := zipkin.NewExporter(reporter, localEndpoint)
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	trace.RegisterExporter(exporter)
-	log.Info("jaeger initialization completed.")
+	trace.RegisterExporter(ze)
+	log.Info("zipkin initialization completed.")
 }
 
 func initStats(log logrus.FieldLogger, exporter *stackdriver.Exporter) {
